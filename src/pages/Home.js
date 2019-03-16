@@ -2,8 +2,14 @@ import React, { Component } from "react";
 import { connect } from "react-redux";
 import Cookies from "universal-cookie";
 import { Redirect } from "react-router-dom";
-import { Button, FormGroup, FormControl, ControlLabel } from "react-bootstrap";
+import {
+  Button,
+  FormGroup,
+  FormControl,
+  ControlLabel
+} from "react-bootstrap";
 import "./css/Home.css";
+import DateTime from "react-datetime";
 
 const cookies = new Cookies();
 
@@ -18,10 +24,16 @@ class Home extends Component {
 
     this.state = {
       redirect: false,
-      name: '',
-      categoryId: '',
-      startTime: '',
-      endTime: ''
+      name: "",
+      category_id: "",
+      start_time: "",
+      end_time: "",
+      categoryData: [
+        {
+          id: 1,
+          name: "Waiting..."
+        }
+      ]
     };
 
     if (cookies.get("accessToken") == null) {
@@ -33,6 +45,8 @@ class Home extends Component {
     if (this.props.user == null && cookies.get("accessToken") != null) {
       this.getUserData();
     }
+
+    this.getCategoryData();
   }
 
   processResponse(response) {
@@ -40,6 +54,28 @@ class Home extends Component {
       statusCode: res[0],
       data: res[1]
     }));
+  }
+
+  getCategoryData() {
+    fetch(process.env.REACT_APP_REST_API_LOCATION + "/api/category", {
+      method: "GET",
+      headers: {
+        Authorization: cookies.get("accessToken")
+      }
+    })
+      .then(this.processResponse)
+      .then(res => {
+        if (res.statusCode !== 200) {
+          console.log(res.data.message);
+        } else {
+          this.setState({ categoryData: res.data.data });
+          this.props.fetchData(res.data);
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        return { name: "network error", description: "" };
+      });
   }
 
   getUserData() {
@@ -107,33 +143,54 @@ class Home extends Component {
     return (
       <React.Fragment>
         <div className="Login">
-        <form onSubmit={this.handleSubmit}>
-          <FormGroup controlId="name" bsSize="large">
-            <ControlLabel>Name</ControlLabel>
-            <FormControl
-              autoFocus
-              type="name"
-              value={this.state.name}
-              onChange={this.handleChange}
+          <form onSubmit={this.handleSubmit}>
+            <FormGroup controlId="name" bsSize="large">
+              <ControlLabel>Name</ControlLabel>
+              <FormControl
+                autoFocus
+                placeholder="Name"
+                type="name"
+                value={this.state.name}
+                onChange={this.handleChange}
+              />
+            </FormGroup>
+            <FormGroup controlId="category_id" bsSize="large">
+              <ControlLabel>Category</ControlLabel>
+              <FormControl
+                componentClass="select"
+                value={this.state.category_id}
+                onChange={this.handleChange}
+              >
+                {this.state.categoryData.map(item => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+              </FormControl>
+            </FormGroup>
+            <ControlLabel>Start DateTime</ControlLabel>
+            <DateTime
+              locale="th"
+              inputProps={{
+                id: "start_time",
+                onChange: this.handleChange,
+                onBlur: this.handleChange,
+                autoComplete: "off"
+              }}
             />
-          </FormGroup>
-          <FormGroup controlId="categoryId" bsSize="large">
-            <ControlLabel>Category</ControlLabel>
-            <FormControl
-              value={this.state.categoryId}
-              onChange={this.handleChange}
-              type="categoryId"
+            <ControlLabel>End DateTime</ControlLabel>
+            <DateTime
+              locale="th"
+              inputProps={{
+                id: "end_time",
+                onChange: this.handleChange,
+                onBlur: this.handleChange,
+                autoComplete: "off"
+              }}
             />
-          </FormGroup>
-          <Button
-            block
-            bsStyle="success"
-            bsSize="large"
-            type="submit"
-          >
-            Search
-          </Button>
-        </form>
+            <br />
+            <Button block bsStyle="success" bsSize="large" type="submit">
+              Search
+            </Button>
+          </form>
         </div>
       </React.Fragment>
     );

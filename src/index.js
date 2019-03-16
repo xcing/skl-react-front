@@ -9,6 +9,7 @@ import { createStore, applyMiddleware } from "redux";
 import rootReducer from "./reducers";
 import logger from "redux-logger";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "react-datetime/css/react-datetime.css";
 
 const store = createStore(rootReducer, applyMiddleware(logger));
 
