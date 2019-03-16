@@ -1,0 +1,14 @@
+@media all and (min-width: 1265px) {
+    .block-left {
+        background: yellow;
+        border: 1px solid red;
+        border-radius: 15px;
+        min-height:100vh;
+        padding:5px;
+    }
+
+    .block-left .logo {
+        width: 50px;
+    }
+    
+}

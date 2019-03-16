@@ -1,0 +1,14 @@
+@media all and (min-width: 1265px) {
+    .block-chat {
+        background: yellow;
+        border: 1px solid red;
+        border-radius: 15px;
+        min-height:100vh;
+        padding:5px;
+    }
+    
+    .block-chat .logo {
+        width: 20px;
+    }
+    
+}
