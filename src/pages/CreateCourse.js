@@ -1,18 +1,17 @@
 import React, { Component } from "react";
-import { connect } from "react-redux";
-import Cookies from "universal-cookie";
-import { Redirect, Link } from "react-router-dom";
 import {
   Button,
   FormGroup,
   FormControl,
   ControlLabel,
   Grid,
-  Col,
   Row,
-  Table
+  Col
 } from "react-bootstrap";
-import "./css/Home.css";
+import Cookies from "universal-cookie";
+import { Redirect, Link } from "react-router-dom";
+import { connect } from "react-redux";
+import "./css/Login.css";
 import DateTime from "react-datetime";
 
 const cookies = new Cookies();
@@ -22,54 +21,44 @@ export const addAllUserData = data => ({
   data: data
 });
 
-function CourseListItem(courseData) {
-  if (courseData.value !== "") {
-    const courseListItems = courseData.value.map(course => (
-      <tr key={course.id}>
-        <td>{course.instructor.firstname}</td>
-        <td>{course.category.name}</td>
-        <td>{course.subject}</td>
-        <td>{course.description}</td>
-        <td>{course.number_of_student}</td>
-        <td>{course.start_time}</td>
-        <td>{course.end_time}</td>
-      </tr>
-    ));
-    return courseListItems;
-  }
-}
-
-class Home extends Component {
+class CreateCourse extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      redirect: false,
       name: "",
-      category_id: undefined,
-      start_time: undefined,
-      end_time: undefined,
+      subject: "",
+      description: "",
+      category_id: 1,
+      number_of_student: 0,
+      start_time: "",
+      end_time: "",
       categoryData: [
         {
           id: 1,
           name: "Waiting..."
         }
       ],
-      courseData: undefined
+      redirect: false
     };
-
-    if (cookies.get("accessToken") == null) {
-      this.state.redirect = true;
-    }
   }
 
   componentDidMount() {
     if (this.props.user == null && cookies.get("accessToken") != null) {
       this.getUserData();
     }
-
     this.getCategoryData();
-    this.getCourseData();
+  }
+
+  validateForm() {
+    return (
+      this.state.name.length > 0 &&
+      this.state.subject.length > 0 &&
+      this.state.description.length > 0 &&
+      this.state.number_of_student.length > 0 &&
+      this.state.start_time.length > 0 &&
+      this.state.end_time.length > 0
+    );
   }
 
   processResponse(response) {
@@ -100,31 +89,6 @@ class Home extends Component {
       });
   }
 
-  getCourseData() {
-    fetch(process.env.REACT_APP_REST_API_LOCATION + "/api/course", {
-      method: "POST",
-      headers: {
-        Authorization: cookies.get("accessToken"),
-        Accept: "application/json",
-        "Content-Type": "application/json"
-      },
-      dataType: "json",
-      body: JSON.stringify(this.state)
-    })
-      .then(this.processResponse)
-      .then(res => {
-        if (res.statusCode !== 200) {
-          console.log(res.data.message);
-        } else {
-          this.setState({ courseData: res.data.data });
-        }
-      })
-      .catch(error => {
-        console.error(error);
-        return { name: "network error", description: "" };
-      });
-  }
-
   getUserData() {
     fetch(process.env.REACT_APP_REST_API_LOCATION + "/api/auth/user", {
       method: "GET",
@@ -138,6 +102,7 @@ class Home extends Component {
           console.log(res.data.message);
         } else {
           this.props.fetchData(res.data);
+          this.setState({ redirect: true });
         }
       })
       .catch(error => {
@@ -145,6 +110,12 @@ class Home extends Component {
         return { name: "network error", description: "" };
       });
   }
+
+  handleChange = event => {
+    this.setState({
+      [event.target.id]: event.target.value
+    });
+  };
 
   handleDateChange = event => {
     let datetimeArr = event.target.value.split(" ");
@@ -162,59 +133,49 @@ class Home extends Component {
     });
   };
 
-  handleChange = event => {
-    this.setState({
-      [event.target.id]: event.target.value
-    });
-  };
-
   handleSubmit = event => {
     event.preventDefault();
-    this.getCourseData();
+
+    fetch(process.env.REACT_APP_REST_API_LOCATION + "/api/course/create", {
+      method: "POST",
+      headers: {
+        Authorization: cookies.get("accessToken"),
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      dataType: "json",
+      body: JSON.stringify(this.state)
+    })
+      .then(this.processResponse)
+      .then(res => {
+        if (res.statusCode !== 200) {
+          console.log(res.data.message);
+        } else {
+          console.log(res.data);
+          alert('Create Complete');
+          this.setState({ redirect: true });
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        return { name: "network error", description: "" };
+      });
   };
 
   render() {
     const { redirect } = this.state;
-    if (redirect && window.location.pathname !== "/login") {
-      return <Redirect to="/login" />;
-    }
-
-    let courseListItems;
-    if (this.state.courseData !== undefined) {
-      courseListItems = <CourseListItem value={this.state.courseData} />;
-    }
-
-    let yourRole;
-    let createButton;
-    if (this.props.user != null) {
-      yourRole = <Col md={4}>Hi! {this.props.user.firstname} {this.props.user.lastname} You are {this.props.user.type}</Col>;
-      if (this.props.user.type == "Instructor") {
-        createButton = (
-          <Col md={2}>
-            <Link to={"/course/create/"}>
-              <Button block bsStyle="success" type="button">
-                Create Course
-              </Button>
-            </Link>
-          </Col>
-        );
-      }
+    if (redirect && window.location.pathname !== "/") {
+      return <Redirect to="/" />;
     }
 
     return (
       <React.Fragment>
         <div className="Home">
-          <Grid>
-            <Row>
-              {yourRole}
-              {createButton}
-            </Row>
-          </Grid>
           <form onSubmit={this.handleSubmit}>
             <Grid>
               <Row>
-                <Col md={3}>
-                  <FormGroup controlId="name">
+                <Col md={4}>
+                  <FormGroup controlId="name" bsSize="large">
                     <ControlLabel>Name</ControlLabel>
                     <FormControl
                       autoFocus
@@ -223,7 +184,39 @@ class Home extends Component {
                     />
                   </FormGroup>
                 </Col>
-                <Col md={3}>
+                <Col md={4}>
+                  <FormGroup controlId="subject" bsSize="large">
+                    <ControlLabel>Subject</ControlLabel>
+                    <FormControl
+                      autoFocus
+                      value={this.state.subject}
+                      onChange={this.handleChange}
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md={4}>
+                  <FormGroup controlId="number_of_student" bsSize="large">
+                    <ControlLabel>Number of student</ControlLabel>
+                    <FormControl
+                      value={this.state.number_of_student}
+                      onChange={this.handleChange}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
+              <Row>
+                <Col md={12}>
+                  <FormGroup controlId="description" bsSize="large">
+                    <ControlLabel>Description</ControlLabel>
+                    <FormControl
+                      value={this.state.description}
+                      onChange={this.handleChange}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
+              <Row>
+                <Col md={4}>
                   <FormGroup controlId="category_id">
                     <ControlLabel>Category</ControlLabel>
                     <FormControl
@@ -231,9 +224,6 @@ class Home extends Component {
                       value={this.state.category_id}
                       onChange={this.handleChange}
                     >
-                      <option key={0} value="">
-                        -- All --
-                      </option>
                       {this.state.categoryData.map(item => (
                         <option key={item.id} value={item.id}>
                           {item.name}
@@ -242,7 +232,7 @@ class Home extends Component {
                     </FormControl>
                   </FormGroup>
                 </Col>
-                <Col md={2}>
+                <Col md={4}>
                   <ControlLabel>Start DateTime</ControlLabel>
                   <DateTime
                     locale="th"
@@ -254,7 +244,7 @@ class Home extends Component {
                     }}
                   />
                 </Col>
-                <Col md={2}>
+                <Col md={4}>
                   <ControlLabel>End DateTime</ControlLabel>
                   <DateTime
                     locale="th"
@@ -266,29 +256,31 @@ class Home extends Component {
                     }}
                   />
                 </Col>
-                <Col md={2}>
+              </Row>
+              <Row>
+                <Col md={6}>
                   <ControlLabel>&nbsp;</ControlLabel>
-                  <Button block bsStyle="primary" type="submit">
-                    Search
+                  <Button
+                    block
+                    bsStyle="primary"
+                    bsSize="large"
+                    disabled={!this.validateForm()}
+                    type="submit"
+                  >
+                    Create
                   </Button>
+                </Col>
+                <Col md={6}>
+                  <ControlLabel>&nbsp;</ControlLabel>
+                  <Link to={"/"}>
+                    <Button block bsStyle="danger" bsSize="large" type="button">
+                      Cancel
+                    </Button>
+                  </Link>
                 </Col>
               </Row>
             </Grid>
           </form>
-          <Table striped bordered hover size="sm">
-            <thead>
-              <tr>
-                <th>Instructor</th>
-                <th>Category</th>
-                <th>Subject</th>
-                <th>Description</th>
-                <th>Number of student</th>
-                <th>Start datetime</th>
-                <th>End datetime</th>
-              </tr>
-            </thead>
-            <tbody>{courseListItems}</tbody>
-          </Table>
         </div>
       </React.Fragment>
     );
@@ -310,4 +302,4 @@ const mapDispatchToProps = dispatch => {
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(Home);
+)(CreateCourse);
